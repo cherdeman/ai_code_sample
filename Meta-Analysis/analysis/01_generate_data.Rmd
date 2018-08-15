@@ -1,0 +1,43 @@
+---
+title: "Generate Data"
+author: "Claire Herdeman"
+date: "8/15/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Generate random data
+
+```{r}
+set.seed(08152018)
+
+# Data to represent previous data set
+old_df <- data.frame("study"=rep(1:12, each=10),
+                     "group"=c("Female", "Male", "Black", "White", "Latinx", "18-24", "25-30", "31-45", "46-60", "61+"),
+                     "treatment_effect" = runif(120, -0.028, 0.056),
+                     "standard_error" = runif(120, 0.001, 0.055),
+                     "treat_n" = round(runif(120, 70, 15000)))
+old_df$control_n <- old_df$treat_n + round(runif(120, -500, 500))
+
+# Data to represent data update
+new_df <- data.frame("study"=rep(13:22, each=10),
+                     "group"=c("Female", "Male", "Black", "White", "Latinx", "18-24", "25-30", "31-45", "46-60", "61+"),
+                     "treatment_effect" = runif(100, -0.048, 0.201),
+                     "standard_error" = runif(100, 0.002, 0.134),
+                     "treat_n" = round(runif(100, 100, 18000)))
+new_df$control_n <- new_df$treat_n + round(runif(100, -500, 500))
+```
+
+# Write out datafiles to CSV
+
+```{r}
+# Set export directory
+ed <- "~/projects/ai_code_sample/Meta-Analysis/"
+
+# Write to CSV
+write.csv(old_df, file.path(ed, "data/", "old_data.csv"))
+write.csv(new_df, file.path(ed, "data/", "new_data.csv"))
+```

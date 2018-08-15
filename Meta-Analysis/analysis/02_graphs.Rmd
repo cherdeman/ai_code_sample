@@ -1,0 +1,272 @@
+---
+title: "Graphs"
+author: "Claire Herdeman"
+date: "8/15/2018"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r dependencies, include = F}
+library(knitr)
+library(meta)
+library(dplyr)
+library(ggplot2)
+```
+
+# Define Functions {.tabset}
+
+## Barplots 
+
+```{r}
+# Note: this is a simplified version of an internal AI graphing function
+barplot_simple <- function(df, x, y,
+                     fillVar = NULL, fillColor = NULL,
+                     barwidth = 0.9,
+                     upper.err = 'upper.err', lower.err = 'lower.err',
+                     hasErrBar = TRUE,
+                     errorbarwidth = 0.15, errorbarcolor = '#575757',
+                     xlabel = NULL,
+                     yLabelPlace = NULL,
+                     yLabelName = 'ylabel',
+                     xtitle = '', ytitle = '',
+                     hasLegend = FALSE,
+                     lab_size = 4.75,
+                     ncol = NULL,
+                     nrow = NULL){
+  require(ggplot2)
+
+  # Make Plots -----
+  dodge <- position_dodge(width = barwidth)
+
+  # Base Plot
+  pp <- ggplot(df, aes_string(x = x, y = y, fill = fillVar)) +
+    geom_bar(stat = "identity", width = barwidth, position = dodge)
+
+  # Add Error Bars
+  if(hasErrBar){
+    pp <- pp + geom_errorbar(aes_string(ymax = upper.err, ymin = lower.err),
+                  position = dodge, width = errorbarwidth,
+                  colour = errorbarcolor)
+  }
+  
+  # Add Fill Color
+  if(!is.null(fillColor)){
+    pp <- pp + scale_fill_manual(values = as.character(df[[fillColor]]))
+  }
+  
+  # Add Axes
+  pp <- pp + labs(x = xtitle, y = ytitle)
+
+  # Remove Legend
+  if(hasLegend == F){
+    pp <- pp + guides(fill=FALSE)
+  }
+
+  return(pp)
+}
+```
+
+## Percentage Point Transformation
+
+```{r}
+transform <- function(df, var_estimate, var_se,
+                         var_ci_lower = NULL, var_ci_upper = NULL){
+
+  df[[var_estimate]] <- df[[var_estimate]] * 100
+  df[[var_se]] <- df[[var_se]] * 100
+
+  if(!is.null(var_ci_lower))
+    df[[var_ci_lower]] <- df[[var_ci_lower]] * 100
+  if(!is.null(var_ci_upper))
+    df[[var_ci_upper]] <- df[[var_ci_upper]] * 100
+
+  df
+}
+```
+
+# Load Data
+
+```{r}
+# Working Directory
+wd <- "~/projects/ai_code_sample/Meta-Analysis/data/"
+
+# Read in files
+original <- read.csv(paste0(wd, "old_data.csv"))
+update <- read.csv(paste0(wd, "new_data.csv"))
+
+# Merge 
+df <- rbind(original, update)
+```
+
+# Validate Prior Results {.tabset}
+
+## Gender
+
+```{r}
+g1 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "Male")
+g2 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "Female")
+
+gender_old <- data.frame('label'=c('Male', 'Female'), 'te'=c(g1$TE.random, g2$TE.random),
+                         'se' = c(g1$seTE.random, g2$seTE.random),
+                         'lower.err'=c(g1$lower.random, g2$lower.random), 
+                         'upper.err'=c(g1$upper.random, g2$upper.random))
+
+gender_old$color <- c("light blue", "gray")
+
+gender_old <- transform(gender_old, 'te', 'se', 'lower.err', 'upper.err')
+
+p1 <- barplot_simple(gender_old, 'label', 'te', fillVar='label', fillColor = 'color',
+                         yLabelPlace = 'offset',
+                         yLabelName = round(gender_old$te, digits = 1),
+                         ytitle = 'Treatment Effect (percentage points)',
+                         xtitle = 'Gender')
+
+p1
+```
+
+## Age
+
+```{r}
+# Age
+a1 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "18-24")
+a2 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "25-30")
+a3 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "31-45")
+a4 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "46-60")
+a5 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "61+")
+
+age_old <- data.frame('label'=c('18-24', '25-30', '31-45', '46-60', '61+'), 
+                      'te'=c(a1$TE.random, a2$TE.random, a3$TE.random, a4$TE.random, a5$TE.random),
+                       'se' = c(a1$seTE.random, a2$seTE.random, a3$seTE.random, a4$seTE.random, a5$seTE.random),
+                       'lower.err'=c(a1$lower.random, a2$lower.random, a3$lower.random, a4$lower.random, a5$lower.random), 
+                       'upper.err'=c(a1$upper.random, a2$upper.random, a3$upper.random, a4$upper.random, a5$upper.random))
+
+age_old$colors <- c("gray", "light blue", "light green", "red", "orange")
+
+age_old <- transform(age_old, 'te', 'se', 'lower.err', 'upper.err')
+
+p2 <- barplot_simple(age_old, 'label', 'te', fillVar='label', fillColor = 'colors', 
+                         yLabelPlace = 'offset',
+                         yLabelName = round(age_old$te, digits = 1),
+                         ytitle = 'Treatment Effect (percentage points)',
+                         xtitle = 'Age')
+
+p2
+```
+
+## Race
+
+```{r}
+# Race
+r1 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "White")
+r2 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "Black")
+r3 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=original, subset=group == "Latinx")
+
+race_old <- data.frame('label'=c('White', 'African American', 'Latinx'), 
+                         'te'=c(r1$TE.random, r2$TE.random, r3$TE.random),
+                         'se' = c(r1$seTE.random, r2$seTE.random, r3$seTE.random),
+                         'lower.err'=c(r1$lower.random, r2$lower.random, r3$lower.random), 
+                         'upper.err'=c(r1$upper.random, r2$upper.random, r3$upper.random))
+
+race_old$colors <- c("gray", "light blue", "light green")
+
+race_old <- transform(race_old, 'te', 'se', 'lower.err', 'upper.err')
+
+p3 <- barplot_simple(race_old, 'label', 'te', fillVar='label', fillColor = 'colors', 
+                         yLabelPlace = 'offset',
+                         yLabelName = round(race_old$te, digits = 1),
+                         ytitle = 'Treatment Effect (percentage points)',
+                         xtitle = 'Race')
+
+p3
+```
+
+# Updated Results {.tabset}
+
+## Gender
+
+```{r}
+tg1 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "Male")
+tg2 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "Female")
+
+gender_new <- data.frame('label'=c('Male', 'Female'), 'te'=c(tg1$TE.random, tg2$TE.random),
+                         'se' = c(tg1$seTE.random, tg2$seTE.random),
+                         'lower.err'=c(tg1$lower.random, tg2$lower.random), 
+                         'upper.err'=c(tg1$upper.random, tg2$upper.random))
+
+gender_new$color <- c("light blue", "gray")
+
+gender_new <- transform(gender_new, 'te', 'se', 'lower.err', 'upper.err')
+
+tp1 <- barplot_simple(gender_new, 'label', 'te', fillVar='label', fillColor = 'color',
+                         yLabelPlace = 'offset',
+                         yLabelName = round(gender_old$te, digits = 1),
+                         ytitle = 'Treatment Effect (percentage points)',
+                         xtitle = 'Gender')
+
+tp1
+```
+
+## Age
+
+```{r}
+# Age
+ta1 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "18-24")
+ta2 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "25-30")
+ta3 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "31-45")
+ta4 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "46-60")
+ta5 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "61+")
+
+age_new <- data.frame('label'=c('18-24', '25-30', '31-45', '46-60', '61+'), 
+                      'te'=c(ta1$TE.random, ta2$TE.random, ta3$TE.random, ta4$TE.random, ta5$TE.random),
+                       'se' = c(ta1$seTE.random, ta2$seTE.random, ta3$seTE.random, ta4$seTE.random, ta5$seTE.random),
+                       'lower.err'=c(ta1$lower.random, ta2$lower.random, ta3$lower.random, ta4$lower.random, ta5$lower.random), 
+                       'upper.err'=c(ta1$upper.random, ta2$upper.random, ta3$upper.random, ta4$upper.random, ta5$upper.random))
+
+age_new$colors <- c("gray", "light blue", "light green", "red", "orange")
+
+age_new <- transform(age_new, 'te', 'se', 'lower.err', 'upper.err')
+
+t2 <- barplot_simple(age_new, 'label', 'te', fillVar='label', fillColor = 'colors', 
+                         yLabelPlace = 'offset',
+                         yLabelName = round(age_old$te, digits = 1),
+                         ytitle = 'Treatment Effect (percentage points)',
+                         xtitle = 'Age')
+
+t2
+```
+
+## Race
+
+```{r}
+# Race
+tr1 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "White")
+tr2 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "Black")
+tr3 <- metagen(TE=treatment_effect, seTE=standard_error, n.c=control_n, n.e = treat_n, data=df, subset=group == "Latinx")
+
+race_new <- data.frame('label'=c('White', 'African American', 'Latinx'), 
+                         'te'=c(tr1$TE.random, tr2$TE.random, tr3$TE.random),
+                         'se' = c(tr1$seTE.random, tr2$seTE.random, tr3$seTE.random),
+                         'lower.err'=c(tr1$lower.random, tr2$lower.random, tr3$lower.random), 
+                         'upper.err'=c(tr1$upper.random, tr2$upper.random, tr3$upper.random))
+
+race_new$colors <- c("gray", "light blue", "light green")
+
+race_new <- transform(race_new, 'te', 'se', 'lower.err', 'upper.err')
+
+tp3 <- barplot_simple(race_new, 'label', 'te', fillVar='label', fillColor = 'colors', 
+                         yLabelPlace = 'offset',
+                         yLabelName = round(race_old$te, digits = 1),
+                         ytitle = 'Treatment Effect (percentage points)',
+                         xtitle = 'Race')
+
+tp3
+```
