@@ -1,6 +1,6 @@
 # Adding the Pre-Commit Hook for Large Files to Your Repo #
 
-This markdown is intended to provide instruction on how to implement a pre-commit hook to prevent the addition of large files to AI git repositories. Git hooks are not shared across repositories or by different users of the same repository, so each user will need to run through these steps for each newly cloned or existing repository. After these steps are successfully completed, this script will execute every time the git commit command is run. 
+This markdown is intended to provide instruction on how to implement a pre-commit hook to prevent the addition of large files to git repositories. Git hooks are not shared across repositories or by different users of the same repository, so each user will need to run through these steps for each newly cloned or existing repository. After these steps are successfully completed, this script will execute every time the git commit command is run. 
 
 ## Setup Instructions ##
 
