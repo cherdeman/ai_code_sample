@@ -1,0 +1,146 @@
+---
+title: "Power Analysis"
+author: "Claire Herdeman"
+date: "8/15/2018"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Define Power Function 
+
+```{r}
+# Define power function
+
+power <- function(df, t, alpha = 0.1) {
+  # Subset dataframe on type, find groups within that type
+  df <- df[df$type == t, ]
+  group1 <- unique(df$group)
+  group2 <- group1[2:length(group1)]
+  
+  # Calculate power that pooled TE is not null
+  for (compare1 in group1) {
+    vector1 <- df[df$group == compare1, ]$treatment_effect
+    no_na1 <- vector1[!is.na(vector1)]
+    mu1 <- mean(no_na1)
+    n1 <- length(unique(df[df$group == compare1, ]$study))
+    
+    # Compare to 0
+    z1 <- (mu1)/(sd(no_na1)*sqrt(1/n1))
+    p1 <- pnorm(z1-qnorm(1-alpha/2))+pnorm(-z1-qnorm(1-alpha/2))
+    
+    print(sprintf("The power of the test that the TE is not null for subgroup %s is %.4f.", 
+                  compare1, p1))
+  }
+  cat('\n')
+  
+  # Calculate power for all pairwise group combinations
+  for (compare1 in group1) {  
+    for (compare2 in group2) {
+      if (compare1 != compare2) {
+        vector2 <- df[df$group == compare2, ]$treatment_effect
+        no_na2 <- vector2[!is.na(vector2)]
+        mu2 <- mean(no_na2)
+        sd_pool <- sqrt(sd(no_na1)**2 + sd(no_na2)**2)
+        n2 <- length(unique(df[df$group == compare2, ]$study))
+    
+        # Calculate z and power for pairwise comparison
+        z <- (mu1 - mu2)/(sd_pool*sqrt((1/n1) + (1/n2)))
+        power <- pnorm(z-qnorm(1-alpha/2))+pnorm(-z-qnorm(1-alpha/2))
+  
+        print(sprintf("The power of the comparison between %s and %s is %.4f.", 
+                      compare1, compare2, power))
+      }
+    }
+  }
+}
+```
+
+# Load Data
+
+```{r}
+# Working Directory
+wd <- "~/projects/ai_code_sample/Meta-Analysis/data/"
+
+# Read in files
+original <- read.csv(paste0(wd, "old_data.csv"))
+update <- read.csv(paste0(wd, "new_data.csv"))
+
+# Merge 
+df <- rbind(original, update)
+
+# Recode original and df
+race <- c("White", "Black", "Latinx") 
+age <- c("18-24", "25-30", "31-45", "46-60", "61+")
+gender <- c("Female", "Male")
+
+original$type <- ifelse(original$group %in% race, "race", ifelse(original$group %in% age, "age", "gender"))
+df$type <- ifelse(df$group %in% race, "race", ifelse(df$group %in% age, "age", "gender"))  
+```
+
+# Prior and Updated Analysis Comparions
+
+## Total Number of Experiments Analyzed
+
+```{r}
+# Find count of unique studies included in analysis
+exp_old <- unique(original$study)
+num_old <- length(exp_old)
+
+exp_new <- unique(df$study)
+num_new <- length(exp_new)
+
+# Print results
+sprintf("The total number of experiments included in the 2016 subgroup analysis was %s", num_old)
+sprintf("The total number of experiments included in the 2018 subgroup analysis update is %s", num_new)
+```
+
+## Power Calculations {.tabset}
+Two sets of power calculations are explored in this analysis. The first is the likelihood that the pooled treatment effect for each subgroup, determined by the meta-analytic review, correctly differentiates from the null effect.  The second is the likelihood that the pooled treatment effect of each subgroup can be differentiated from the other subgroups. 
+
+For example:  
+Test 1: Probability that the effect of treatment on Females is not 0.  
+Test 2: The effect that the effect of treatment on Females differs from that on Males.  
+
+Power is calculated using the formulas:  
+Test 1  
+$z = \frac{u - 0}{\sigma * \sqrt(n)}$  
+$power = \Phi(z - z_{1-\alpha/2}) + \Phi(-z - z_{1-\alpha/2})$  
+
+Test 2 \n
+$z = \frac{u_1 - u_2}{\sigma * \sqrt(\frac{1}{n_1} + \frac{1}{n_2})}$  
+$power = \Phi(z - z_{1-\alpha/2}) + \Phi(-z - z_{1-\alpha/2})$  
+
+Assumptions:  
+  $\alpha = 0.9$ unless otherwise specified by the user  
+  n is the number of tests included in the meta-analysis, as stated in the chunk above for 2016 and the current update  
+
+
+The results of the analysis that increasing the number of experiments included in the meta-analysis generally improve the confidence that subgroup  treatment effects differ from zero, but do not necessarily improve our ability to differentiate the magnitude of the treatment effects between groups. As this is randomly generated data, no conclusions should be drawn from this analysis.
+
+### Gender
+```{r}
+# Compare the two groups
+power(original, "gender")
+power(df, "gender")
+```
+
+### Race
+```{r}
+power(original, "race")
+power(df, "race")
+```
+
+### Age
+```{r}
+power(original, "age")
+power(df, "age")
+```

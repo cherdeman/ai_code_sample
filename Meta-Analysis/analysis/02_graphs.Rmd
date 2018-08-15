@@ -28,6 +28,7 @@ library(ggplot2)
 
 ```{r}
 # Note: this is a simplified version of an internal AI graphing function
+"This function wraps ggplot2's geom_bar plot to more easily create replicable barplots with a similar style."
 barplot_simple <- function(df, x, y,
                      fillVar = NULL, fillColor = NULL,
                      barwidth = 0.9,
@@ -78,6 +79,8 @@ barplot_simple <- function(df, x, y,
 ## Percentage Point Transformation
 
 ```{r}
+# This is a version of AI's transform function
+"This function converts standard model outputs from decimals to percentage points."
 transform <- function(df, var_estimate, var_se,
                          var_ci_lower = NULL, var_ci_upper = NULL){
 
@@ -108,6 +111,8 @@ df <- rbind(original, update)
 ```
 
 # Validate Prior Results {.tabset}
+
+The purpose of this section is to recreate the graphs from the original analysis to validate that the updated methodology (in R) creates the same output as the previous analysis (in Stata).
 
 ## Gender
 
@@ -190,6 +195,8 @@ p3
 ```
 
 # Updated Results {.tabset}
+
+The updated results, including additional experiments, can be compared side by side with the results of the prior analysis. As the data is randomly generated, no meaningful conclusions can be drawn from this comparison.
 
 ## Gender
 

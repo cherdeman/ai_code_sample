@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Generate random data
 
+As the Analyst Institute's research is private, I am generating random data sets for the purposes of this code sample.
+
 ```{r}
 set.seed(08152018)
 
