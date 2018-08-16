@@ -1,2 +1,2 @@
 # ai_code_sample
-Code sample from internship at the Analyst Institute, summer 2018
+Code sample from internship, summer 2018
